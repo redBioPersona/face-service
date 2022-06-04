@@ -2,9 +2,6 @@ package red.biopersona.faceservice.controller.exception;
 
 import red.biopersona.faceservice.util.ErrorEnum;
 
-/**
- * @author uaquino Clase de exception de negocio de los metodos de CollectionsService
- */
 public class CollectionsServiceException extends Exception {
 
 	private static final long serialVersionUID = 1303454450535514738L;

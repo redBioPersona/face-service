@@ -1,16 +1,14 @@
-package red.biopersona.faceservice.controller.exception.model;
+package red.biopersona.faceservice.model;
 
 import java.io.Serializable;
-import java.util.List;
 
 import lombok.Getter;
 import lombok.Setter;
-
 @Getter
 @Setter
-public class ResponseEnrollFace  implements Serializable {
+public class ResponseValidaFaceDTO implements Serializable {
 
-    /** Variable para serializar la clase. */
+	/** Variable para serializar la clase. */
     private static final long serialVersionUID = 1L;
     
     private int personsFound;
@@ -20,4 +18,6 @@ public class ResponseEnrollFace  implements Serializable {
     private int backgroundUniformity;
     private int grayScale;
     private String message;
+    private String personFound;
+    private int personFoundScore;
 }

@@ -17,15 +17,6 @@ import red.biopersona.faceservice.controller.exception.model.DefaultError;
 import red.biopersona.faceservice.controller.exception.model.DefaultErrorList;
 import red.biopersona.faceservice.util.ErrorEnum;
 
-/**
- * @author David Gonzalez
- *         Esta clase se encarga de servir como apoyo al controller, manejando
- *         de manera desacoplada
- *         las excepciones esperadas en la aplicacion, y manejando el catalogo
- *         de errores con ayuda de un enumerador personalizado.
- *         Tambien tiene un manejo de errores genericos.
- */
-
 @Slf4j
 @ControllerAdvice
 public class CollectionsControllerExceptionHandler {

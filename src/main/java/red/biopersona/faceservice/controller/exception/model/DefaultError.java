@@ -5,7 +5,6 @@ import java.io.Serializable;
 import red.biopersona.faceservice.util.ErrorEnum;
 
 /**
- * @author David Gonzalez
  * 
  * La clase ErrorBean, usada para indicar los errores que sucedieron durante la ejecucion.
  */

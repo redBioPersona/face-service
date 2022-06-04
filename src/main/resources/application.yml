@@ -12,5 +12,6 @@ face:
   trialMode: true
   serverAddress: /local
   serverPort: 5000
+  routeSqlite: D:\webFinger\MotorValidacion\microservicios\face.db
 persistence-service:
-  enroll: 
+  enroll: http://localhost:8085/persistence/enroll

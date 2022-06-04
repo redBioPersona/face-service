@@ -3,7 +3,7 @@ package red.biopersona.faceservice.enumeration;
 /***
  * Enum con los tipos de error en el formulario de login
  * 
- * @author indra
+ * @author Omar
  *
  */
 public enum GenericDataEnum {

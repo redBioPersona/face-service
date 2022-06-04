@@ -2,29 +2,28 @@ package red.biopersona.faceservice.service;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.neurotec.biometrics.NBiographicDataElement;
+import com.neurotec.biometrics.NBiographicDataSchema;
 import com.neurotec.biometrics.NBiometricOperation;
 import com.neurotec.biometrics.NBiometricStatus;
 import com.neurotec.biometrics.NBiometricTask;
+import com.neurotec.biometrics.NDBType;
 import com.neurotec.biometrics.NFace;
 import com.neurotec.biometrics.NICAOWarning;
 import com.neurotec.biometrics.NLAttributes;
-import com.neurotec.biometrics.NLFeaturePoint;
 import com.neurotec.biometrics.NLProperty;
-import com.neurotec.biometrics.NMatchingDetails.FaceCollection;
+import com.neurotec.biometrics.NMatchingResult;
 import com.neurotec.biometrics.NMatchingSpeed;
 import com.neurotec.biometrics.NSubject;
-
 import com.neurotec.biometrics.NTemplateSize;
 import com.neurotec.biometrics.client.NBiometricClient;
 import com.neurotec.images.NImage;
@@ -35,22 +34,24 @@ import com.neurotec.samples.util.LibraryManager;
 
 import lombok.extern.slf4j.Slf4j;
 import red.biopersona.faceservice.controller.exception.CollectionsServiceException;
-import red.biopersona.faceservice.controller.exception.model.CaracteristicasFacialesDTO;
-import red.biopersona.faceservice.controller.exception.model.ConfidenceDTO;
-import red.biopersona.faceservice.controller.exception.model.EnrollFaceDTO;
-import red.biopersona.faceservice.controller.exception.model.LocationDTO;
-import red.biopersona.faceservice.controller.exception.model.RequestEnrollFaceDTO;
-import red.biopersona.faceservice.controller.exception.model.RequestFaceDTO;
-import red.biopersona.faceservice.controller.exception.model.ResponseCaracteristicasDTO;
-import red.biopersona.faceservice.controller.exception.model.ResponseEnrollFace;
-import red.biopersona.faceservice.controller.exception.model.ResponseFaceDTO;
-import red.biopersona.faceservice.controller.exception.model.ResponseFaceQualityDTO;
-import red.biopersona.faceservice.controller.exception.model.ResponsePuedeCrearTemplateDTO;
+import red.biopersona.faceservice.model.CaracteristicasFacialesDTO;
+import red.biopersona.faceservice.model.ConfidenceDTO;
+import red.biopersona.faceservice.model.LocationDTO;
+import red.biopersona.faceservice.model.RequestEnrollFaceDTO;
+import red.biopersona.faceservice.model.RequestValidaFaceDTO;
+import red.biopersona.faceservice.model.ResponseCaracteristicasDTO;
+import red.biopersona.faceservice.model.ResponseEnrollFace;
+import red.biopersona.faceservice.model.ResponseFaceQualityDTO;
+import red.biopersona.faceservice.model.ResponsePuedeCrearTemplateDTO;
+import red.biopersona.faceservice.model.ResponseValidaFaceDTO;
 import red.biopersona.faceservice.util.ErrorEnum;
 
 @Slf4j
 @Service
 public class ClientesService implements IClientesService {
+
+	@Autowired
+	PersistenceService persistence;
 
 	private final String notDetected = "Not detected";
 	private final String valueFalse = "false";
@@ -61,10 +62,9 @@ public class ClientesService implements IClientesService {
 
 	NBiometricClient biometricClient = null;
 
-	public ClientesService(
-			@Value("${face.trialMode:true}") boolean trialMode,
+	public ClientesService(@Value("${face.trialMode:true}") boolean trialMode,
 			@Value("${face.serverAddress:/local}") String serverAddress,
-			@Value("${face.serverPort:5000}") int serverPort) {
+			@Value("${face.serverPort:5000}") int serverPort, @Value("${face.routeSqlite}") String routeSqlite) {
 		LibraryManager.initLibraryPath();
 		try {
 			log.info("Trial mode: " + trialMode);
@@ -76,6 +76,13 @@ public class ClientesService implements IClientesService {
 			} else {
 				log.info("Licencias obtenidas");
 				biometricClient = new NBiometricClient();
+
+				NBiographicDataSchema NBDS = new NBiographicDataSchema();
+				NBiographicDataSchema.ElementCollection NBDSEC = NBDS.getElements();
+				NBDSEC.add(new NBiographicDataElement("Client", "Client", NDBType.STRING));
+				NBDSEC.add(new NBiographicDataElement("Segmentation", "Segmentation", NDBType.STRING));
+				biometricClient.setBiographicDataSchema(NBDS);
+				biometricClient.setDatabaseConnectionToSQLite(routeSqlite);
 				licenciasFacialesOK = true;
 			}
 		} catch (IOException e) {
@@ -284,12 +291,8 @@ public class ClientesService implements IClientesService {
 
 	}
 
-	private static void writeBytesToFileNio(String fileOutput, byte[] bytes) throws IOException {
-		Path path = Paths.get(fileOutput);
-		Files.write(path, bytes);
-	}
-
-	public ResponseFaceQualityDTO geQuality(NSubject subject, int personsFound, NImage face, boolean getToken,boolean getTemplate) {
+	public ResponseFaceQualityDTO geQuality(NSubject subject, int personsFound, NImage face, boolean getToken,
+			boolean getTemplate) {
 		ResponseFaceQualityDTO resp = new ResponseFaceQualityDTO();
 		log.info("procesando calidad, personas " + personsFound);
 		if (personsFound != 0) {
@@ -314,15 +317,15 @@ public class ClientesService implements IClientesService {
 			if (taskToken.getStatus() == NBiometricStatus.OK) {
 				byte[] FaceToken = null;
 				byte[] FaceTemplate = null;
-				
-				if(getToken) {
+
+				if (getToken) {
 					FaceToken = subjecToken.getFaces().get(1).getImage(true).save(NImageFormat.getJPEG()).toByteArray();
-					resp.setFaceToken(FaceToken);					
+					resp.setFaceToken(FaceToken);
 				}
-				
-				if(getTemplate) {
+
+				if (getTemplate) {
 					FaceTemplate = subject.getTemplateBuffer().toByteArray();
-					resp.setFaceTemplate(FaceTemplate);	
+					resp.setFaceTemplate(FaceTemplate);
 				}
 			}
 		} else {
@@ -344,11 +347,60 @@ public class ClientesService implements IClientesService {
 		}
 	}
 
-	public void guardaMuestra(RequestEnrollFaceDTO request,ResponseFaceQualityDTO calidad) {
-		String client=request.getClient();
-		String biometricPerson=request.getBiometricPerson();
-		String segmentation=request.getSegmentation();
-		byte[] file=calidad.getFaceTemplate();
+	public String guardaMuestra(RequestEnrollFaceDTO request, ResponseFaceQualityDTO calidad)
+			throws CollectionsServiceException {
+		String client = request.getClient();
+		String biometricPerson = request.getBiometricPerson();
+		String segmentation = request.getSegmentation();
+		return persistence.saveTemplate(client, biometricPerson, segmentation, calidad.getFaceTemplate());
+	}
+
+	public ResponseValidaFaceDTO FaceValidation(NSubject subject, String Client,String Segmentation) {
+		ResponseValidaFaceDTO resp=new ResponseValidaFaceDTO();
+		if (Segmentation == null) {
+			subject.setQueryString("Client='" + Client + "'");
+		} else {
+			subject.setQueryString("Client='" + Client + "' AND Segmentation='" + Segmentation + "'");
+		}
+		try {
+			NBiometricTask enrollTaskDE = biometricClient.createTask(EnumSet.of(NBiometricOperation.IDENTIFY), subject);
+			biometricClient.performTask(enrollTaskDE);
+			log.info(enrollTaskDE.getStatus().name());
+			if (enrollTaskDE.getStatus() == NBiometricStatus.OK) {
+				ENCONTRADO: for (NMatchingResult result : subject.getMatchingResults()) {
+					resp.setPersonFound(result.getId());
+					resp.setPersonFoundScore(result.getScore());
+					break ENCONTRADO;
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return resp;
+	}
+
+	public ResponseValidaFaceDTO validaFace(RequestValidaFaceDTO request) throws CollectionsServiceException {
+		ResponseValidaFaceDTO respuesta = new ResponseValidaFaceDTO();
+		ResponsePuedeCrearTemplateDTO estatusTemplate = puedeCrearTemplate(request.getFile());
+		ResponseCaracteristicasDTO caracteristicas = getFaceFeatures(estatusTemplate.getSubject(), false);
+		ResponseFaceQualityDTO calidad = geQuality(estatusTemplate.getSubject(), caracteristicas.getPersonsFound(),
+				estatusTemplate.getImage(), false, false);
+		if (estatusTemplate.getStatus() == NBiometricStatus.OK) {
+			if (caracteristicas.getPersonsFound() == 1) {
+				respuesta=FaceValidation(estatusTemplate.getSubject(),request.getClient(),request.getSegmentation());
+			} else {
+				respuesta.setMessage("many_persons_found");
+			}
+		}
+		respuesta.setMessage(estatusTemplate.getStatus().name());
+		respuesta.setStatusTemplate(estatusTemplate.getStatus().name());
+		respuesta.setPersonsFound(caracteristicas.getPersonsFound());
+		respuesta.setQuality(calidad.getQuality());
+		respuesta.setSharpness(calidad.getSharpness());
+		respuesta.setBackgroundUniformity(calidad.getBackgroundUniformity());
+		respuesta.setGrayScale(calidad.getGrayScale());
+		return respuesta;
 	}
 
 	public ResponseEnrollFace enrollFace(RequestEnrollFaceDTO request) throws CollectionsServiceException {
@@ -356,7 +408,7 @@ public class ClientesService implements IClientesService {
 		ResponsePuedeCrearTemplateDTO estatusTemplate = puedeCrearTemplate(request.getFile());
 		ResponseCaracteristicasDTO caracteristicas = getFaceFeatures(estatusTemplate.getSubject(), false);
 		ResponseFaceQualityDTO calidad = geQuality(estatusTemplate.getSubject(), caracteristicas.getPersonsFound(),
-				estatusTemplate.getImage(), false,true);
+				estatusTemplate.getImage(), false, true);
 		respuesta.setMessage(estatusTemplate.getStatus().name());
 		if (estatusTemplate.getStatus() == NBiometricStatus.OK) {
 			if (caracteristicas.getPersonsFound() == 1) {
@@ -366,7 +418,14 @@ public class ClientesService implements IClientesService {
 					if (request.isAvoidDuplicates()) {
 						evitaDuplicados(estatusTemplate.getSubject(), request);
 					} else {
-						guardaMuestra(request,calidad);
+						log.info("call enroll service");
+						String idTemplate = guardaMuestra(request, calidad);
+						estatusTemplate.getSubject().setId(idTemplate);
+						estatusTemplate.getSubject().setProperty("Client", request.getClient());
+						if (request.getSegmentation() != null) {
+							estatusTemplate.getSubject().setProperty("Segmentation", request.getSegmentation());
+						}
+						biometricClient.enroll(estatusTemplate.getSubject());
 					}
 					respuesta.setMessage("OK");
 				}

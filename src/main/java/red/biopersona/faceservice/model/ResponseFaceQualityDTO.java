@@ -1,4 +1,4 @@
-package red.biopersona.faceservice.controller.exception.model;
+package red.biopersona.faceservice.model;
 
 import java.io.Serializable;
 import lombok.Getter;

@@ -8,7 +8,6 @@ import java.util.List;
 //import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * @author David Gonzalez
  * 
  *         La clase DefaultErrorResponseBean, usada para enviar la respuesta en
  *         caso de error durante la ejecucion del servicio.

@@ -3,7 +3,7 @@ package red.biopersona.faceservice.enumeration;
 /***
  * Enum con los tipos de error del lado de servidor
  * 
- * @author indra
+ * @author Omar
  *
  */
 public enum ErrorServerEnum {

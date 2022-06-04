@@ -6,11 +6,11 @@ import com.neurotec.biometrics.NSubject;
 import com.neurotec.images.NImage;
 
 import red.biopersona.faceservice.controller.exception.CollectionsServiceException;
-import red.biopersona.faceservice.controller.exception.model.RequestEnrollFaceDTO;
-import red.biopersona.faceservice.controller.exception.model.ResponseCaracteristicasDTO;
-import red.biopersona.faceservice.controller.exception.model.ResponseEnrollFace;
-import red.biopersona.faceservice.controller.exception.model.ResponseFaceQualityDTO;
-import red.biopersona.faceservice.controller.exception.model.ResponsePuedeCrearTemplateDTO;
+import red.biopersona.faceservice.model.RequestEnrollFaceDTO;
+import red.biopersona.faceservice.model.ResponseCaracteristicasDTO;
+import red.biopersona.faceservice.model.ResponseEnrollFace;
+import red.biopersona.faceservice.model.ResponseFaceQualityDTO;
+import red.biopersona.faceservice.model.ResponsePuedeCrearTemplateDTO;
 
 public interface IClientesService {
 	
