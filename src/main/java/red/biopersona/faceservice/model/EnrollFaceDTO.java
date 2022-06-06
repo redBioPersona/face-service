@@ -3,6 +3,7 @@ package red.biopersona.faceservice.model;
 import java.io.Serializable;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,12 +19,17 @@ public class EnrollFaceDTO implements Serializable {
     
     @NotNull
     private String client;
-    @NotNull
+    
+    
     private String segmentation;
+    
     @NotNull
+	@Size(min=6, max=30)
     private String biometricPerson;
+    
     @NotNull
     private boolean avoidDuplicates=true;
+    
     @NotNull
     private MultipartFile file;
 

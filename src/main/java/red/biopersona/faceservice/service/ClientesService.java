@@ -355,8 +355,8 @@ public class ClientesService implements IClientesService {
 		return persistence.saveTemplate(client, biometricPerson, segmentation, calidad.getFaceTemplate());
 	}
 
-	public ResponseValidaFaceDTO FaceValidation(NSubject subject, String Client,String Segmentation) {
-		ResponseValidaFaceDTO resp=new ResponseValidaFaceDTO();
+	public ResponseValidaFaceDTO FaceValidation(NSubject subject, String Client, String Segmentation) {
+		ResponseValidaFaceDTO resp = new ResponseValidaFaceDTO();
 		if (Segmentation == null) {
 			subject.setQueryString("Client='" + Client + "'");
 		} else {
@@ -388,7 +388,8 @@ public class ClientesService implements IClientesService {
 				estatusTemplate.getImage(), false, false);
 		if (estatusTemplate.getStatus() == NBiometricStatus.OK) {
 			if (caracteristicas.getPersonsFound() == 1) {
-				respuesta=FaceValidation(estatusTemplate.getSubject(),request.getClient(),request.getSegmentation());
+				respuesta = FaceValidation(estatusTemplate.getSubject(), request.getClient(),
+						request.getSegmentation());
 			} else {
 				respuesta.setMessage("many_persons_found");
 			}
@@ -405,40 +406,46 @@ public class ClientesService implements IClientesService {
 
 	public ResponseEnrollFace enrollFace(RequestEnrollFaceDTO request) throws CollectionsServiceException {
 		ResponseEnrollFace respuesta = new ResponseEnrollFace();
-		ResponsePuedeCrearTemplateDTO estatusTemplate = puedeCrearTemplate(request.getFile());
-		ResponseCaracteristicasDTO caracteristicas = getFaceFeatures(estatusTemplate.getSubject(), false);
-		ResponseFaceQualityDTO calidad = geQuality(estatusTemplate.getSubject(), caracteristicas.getPersonsFound(),
-				estatusTemplate.getImage(), false, true);
-		respuesta.setMessage(estatusTemplate.getStatus().name());
-		if (estatusTemplate.getStatus() == NBiometricStatus.OK) {
-			if (caracteristicas.getPersonsFound() == 1) {
-				if (calidad.getQuality() < 80) {
-					respuesta.setMessage("poor_quality");
-				} else {
-					if (request.isAvoidDuplicates()) {
-						evitaDuplicados(estatusTemplate.getSubject(), request);
+		if (request.getFile() != null) {
+			ResponsePuedeCrearTemplateDTO estatusTemplate = puedeCrearTemplate(request.getFile());
+			log.info("estatusTemplate " + estatusTemplate.toString());
+			ResponseCaracteristicasDTO caracteristicas = getFaceFeatures(estatusTemplate.getSubject(), false);
+			ResponseFaceQualityDTO calidad = geQuality(estatusTemplate.getSubject(), caracteristicas.getPersonsFound(),
+					estatusTemplate.getImage(), false, true);
+			respuesta.setMessage(estatusTemplate.getStatus().name());
+			if (estatusTemplate.getStatus() == NBiometricStatus.OK) {
+				if (caracteristicas.getPersonsFound() == 1) {
+					if (calidad.getQuality() < 80) {
+						respuesta.setMessage("poor_quality");
 					} else {
-						log.info("call enroll service");
-						String idTemplate = guardaMuestra(request, calidad);
-						estatusTemplate.getSubject().setId(idTemplate);
-						estatusTemplate.getSubject().setProperty("Client", request.getClient());
-						if (request.getSegmentation() != null) {
-							estatusTemplate.getSubject().setProperty("Segmentation", request.getSegmentation());
+						if (request.isAvoidDuplicates()) {
+							evitaDuplicados(estatusTemplate.getSubject(), request);
+						} else {
+							log.info("call enroll service");
+							String idTemplate = guardaMuestra(request, calidad);
+							estatusTemplate.getSubject().setId(idTemplate);
+							estatusTemplate.getSubject().setProperty("Client", request.getClient());
+							if (request.getSegmentation() != null) {
+								estatusTemplate.getSubject().setProperty("Segmentation", request.getSegmentation());
+							}
+							biometricClient.enroll(estatusTemplate.getSubject());
 						}
-						biometricClient.enroll(estatusTemplate.getSubject());
+						respuesta.setMessage("OK");
 					}
-					respuesta.setMessage("OK");
+				} else {
+					respuesta.setMessage("many_persons_found");
 				}
-			} else {
-				respuesta.setMessage("many_persons_found");
 			}
+			respuesta.setStatusTemplate(estatusTemplate.getStatus().name());
+			respuesta.setPersonsFound(caracteristicas.getPersonsFound());
+			respuesta.setQuality(calidad.getQuality());
+			respuesta.setSharpness(calidad.getSharpness());
+			respuesta.setBackgroundUniformity(calidad.getBackgroundUniformity());
+			respuesta.setGrayScale(calidad.getGrayScale());
+		} else {
+			respuesta.setMessage("FILE_NOT_FOUND");
 		}
-		respuesta.setStatusTemplate(estatusTemplate.getStatus().name());
-		respuesta.setPersonsFound(caracteristicas.getPersonsFound());
-		respuesta.setQuality(calidad.getQuality());
-		respuesta.setSharpness(calidad.getSharpness());
-		respuesta.setBackgroundUniformity(calidad.getBackgroundUniformity());
-		respuesta.setGrayScale(calidad.getGrayScale());
+
 		return respuesta;
 	}
 

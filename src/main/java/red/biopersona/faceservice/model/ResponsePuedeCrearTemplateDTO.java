@@ -19,4 +19,9 @@ public class ResponsePuedeCrearTemplateDTO implements Serializable {
     private NBiometricStatus status;
     private NSubject subject;
     private NImage image;
+    
+	@Override
+	public String toString() {
+		return "status(" + this.status.name()+")";
+	}
 }
