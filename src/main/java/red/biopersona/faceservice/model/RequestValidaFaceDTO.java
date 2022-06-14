@@ -15,7 +15,7 @@ public class RequestValidaFaceDTO  implements Serializable {
 
     /** Variable para serializar la clase. */
     private static final long serialVersionUID = 1L;
-    @NotNull
+
     private String client;
     
     private String segmentation;

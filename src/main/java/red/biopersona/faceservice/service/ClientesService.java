@@ -46,6 +46,7 @@ import red.biopersona.faceservice.model.ResponsePuedeCrearTemplateDTO;
 import red.biopersona.faceservice.model.ResponseValidaFaceDTO;
 import red.biopersona.faceservice.util.ErrorEnum;
 
+
 @Slf4j
 @Service
 public class ClientesService implements IClientesService {
@@ -81,6 +82,7 @@ public class ClientesService implements IClientesService {
 				NBiographicDataSchema.ElementCollection NBDSEC = NBDS.getElements();
 				NBDSEC.add(new NBiographicDataElement("Client", "Client", NDBType.STRING));
 				NBDSEC.add(new NBiographicDataElement("Segmentation", "Segmentation", NDBType.STRING));
+				NBDSEC.add(new NBiographicDataElement("IdBiometricPerson", "IdBiometricPerson", NDBType.STRING));
 				biometricClient.setBiographicDataSchema(NBDS);
 				biometricClient.setDatabaseConnectionToSQLite(routeSqlite);
 				licenciasFacialesOK = true;
@@ -337,14 +339,11 @@ public class ClientesService implements IClientesService {
 		return resp;
 	}
 
-	public void evitaDuplicados(NSubject subject, RequestEnrollFaceDTO request) {
+	public String evitaDuplicados(NSubject subject, RequestEnrollFaceDTO request) {
 		String segmentation = request.getSegmentation();
 		String client = request.getClient();
-		if (segmentation == null) {
-			subject.setQueryString("Client='" + client + "'");
-		} else {
-			subject.setQueryString("Client='" + client + "' AND Segmentation='" + segmentation + "'");
-		}
+		ResponseValidaFaceDTO reso = FaceValidation(subject, client, segmentation);
+		return reso.getPersonMatch();
 	}
 
 	public String guardaMuestra(RequestEnrollFaceDTO request, ResponseFaceQualityDTO calidad)
@@ -365,11 +364,12 @@ public class ClientesService implements IClientesService {
 		try {
 			NBiometricTask enrollTaskDE = biometricClient.createTask(EnumSet.of(NBiometricOperation.IDENTIFY), subject);
 			biometricClient.performTask(enrollTaskDE);
-			log.info(enrollTaskDE.getStatus().name());
+			log.info("enrollTaskDE "+enrollTaskDE.getStatus().name());
 			if (enrollTaskDE.getStatus() == NBiometricStatus.OK) {
 				ENCONTRADO: for (NMatchingResult result : subject.getMatchingResults()) {
-					resp.setPersonFound(result.getId());
-					resp.setPersonFoundScore(result.getScore());
+					String[] pFound=result.getId().split("_");
+					resp.setPersonMatch(pFound[1]);
+					resp.setPersonMatchScore(result.getScore());
 					break ENCONTRADO;
 				}
 			}
@@ -414,30 +414,40 @@ public class ClientesService implements IClientesService {
 					estatusTemplate.getImage(), false, true);
 			respuesta.setMessage(estatusTemplate.getStatus().name());
 			if (estatusTemplate.getStatus() == NBiometricStatus.OK) {
+				log.info("Ok la extración facial");
 				if (caracteristicas.getPersonsFound() == 1) {
 					if (calidad.getQuality() < 80) {
 						respuesta.setMessage("poor_quality");
 					} else {
+						boolean continuarEnrolamiento = true;
 						if (request.isAvoidDuplicates()) {
-							evitaDuplicados(estatusTemplate.getSubject(), request);
-						} else {
-							log.info("call enroll service");
+							String personMatch = evitaDuplicados(estatusTemplate.getSubject(), request);
+							if (personMatch != null) {
+								continuarEnrolamiento = false;
+								respuesta.setMessage("person_already_enroll");
+								respuesta.setPersonFound(personMatch);
+							}
+						}
+						if (continuarEnrolamiento) {
+							log.info("calling enroll service...");
 							String idTemplate = guardaMuestra(request, calidad);
-							estatusTemplate.getSubject().setId(idTemplate);
 							estatusTemplate.getSubject().setProperty("Client", request.getClient());
 							if (request.getSegmentation() != null) {
 								estatusTemplate.getSubject().setProperty("Segmentation", request.getSegmentation());
 							}
+							estatusTemplate.getSubject().setProperty("IdBiometricPerson", request.getBiometricPerson());
+							String id=idTemplate+"_"+ request.getBiometricPerson();
+							estatusTemplate.getSubject().setId(id);
 							biometricClient.enroll(estatusTemplate.getSubject());
+							respuesta.setMessage("OK");
 						}
-						respuesta.setMessage("OK");
 					}
 				} else {
 					respuesta.setMessage("many_persons_found");
 				}
 			}
 			respuesta.setStatusTemplate(estatusTemplate.getStatus().name());
-			respuesta.setPersonsFound(caracteristicas.getPersonsFound());
+			respuesta.setPersonsCountFound(caracteristicas.getPersonsFound());
 			respuesta.setQuality(calidad.getQuality());
 			respuesta.setSharpness(calidad.getSharpness());
 			respuesta.setBackgroundUniformity(calidad.getBackgroundUniformity());

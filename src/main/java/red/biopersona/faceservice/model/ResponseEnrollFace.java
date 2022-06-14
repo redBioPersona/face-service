@@ -11,7 +11,8 @@ public class ResponseEnrollFace  implements Serializable {
     /** Variable para serializar la clase. */
     private static final long serialVersionUID = 1L;
     
-    private int personsFound;
+    private int personsCountFound;
+    private String personFound;
     private String statusTemplate;
     private int quality;
     private int sharpness;

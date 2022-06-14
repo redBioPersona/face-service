@@ -2,9 +2,9 @@ package red.biopersona.faceservice.model;
 
 import java.io.Serializable;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,18 +18,17 @@ public class RequestEnrollFaceDTO implements Serializable {
 	/** Variable para serializar la clase. */
 	private static final long serialVersionUID = 1L;
 
-	@NotNull(message = "Client may not be null")
-	@NotEmpty(message = "Client not empty")
-	@NotBlank(message = "Client not black")
 	private String client;
 
 	private String segmentation;
 
 	@NotNull(message = "biometricPerson may not be null")
 	@NotEmpty(message = "biometricPerson not empty")
+    @Size(min = 6, max = 36)
 	private String biometricPerson;
 
-	private boolean avoidDuplicates = true;
+	@NotNull(message = "avoidDuplicates may not be null")
+	private boolean avoidDuplicates;
 
 	@NotNull(message = "File may not be null")
 	private MultipartFile file;

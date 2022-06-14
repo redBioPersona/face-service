@@ -1,5 +1,7 @@
 package red.biopersona.faceservice.controller;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,7 +30,7 @@ public class FaceController {
 		
 	@ApiOperation(value = "Carga de archivo", notes = "En el header Location devuelve el recurso que fue registrado", response=ResponseEntity.class, httpMethod="POST")				    
 	@PostMapping(value = "/enroll", produces = MediaType.APPLICATION_JSON_VALUE )
-	public ResponseEntity<?> enroll(@RequestHeader("client") String client,@ModelAttribute RequestEnrollFaceDTO request) throws CollectionsServiceException  {
+	public ResponseEntity<?> enroll(@RequestHeader("client") String client,@Valid @ModelAttribute RequestEnrollFaceDTO request) throws CollectionsServiceException  {
 		log.info("Face enrolling..");
 		request.setClient(client);
 		HttpStatus code = HttpStatus.BAD_REQUEST;
@@ -41,7 +43,7 @@ public class FaceController {
 	
 	@ApiOperation(value = "Carga de archivo", notes = "En el header Location devuelve el recurso que fue registrado", response=ResponseEntity.class, httpMethod="POST")				    
 	@PostMapping(value = "/valida", produces = MediaType.APPLICATION_JSON_VALUE )
-	public ResponseEntity<?> valida(@RequestHeader("client") String client,@ModelAttribute RequestValidaFaceDTO request) throws CollectionsServiceException  {
+	public ResponseEntity<?> valida(@RequestHeader("client") String client,@Valid @ModelAttribute RequestValidaFaceDTO request) throws CollectionsServiceException  {
 		request.setClient(client);
 		HttpStatus code = HttpStatus.BAD_REQUEST;
 		ResponseValidaFaceDTO resul=clientesService.validaFace(request);

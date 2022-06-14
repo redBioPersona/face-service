@@ -18,6 +18,6 @@ public class ResponseValidaFaceDTO implements Serializable {
     private int backgroundUniformity;
     private int grayScale;
     private String message;
-    private String personFound;
-    private int personFoundScore;
+    private String personMatch;
+    private int personMatchScore;
 }
