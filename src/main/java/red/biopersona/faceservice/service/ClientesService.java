@@ -38,10 +38,12 @@ import red.biopersona.faceservice.model.CaracteristicasFacialesDTO;
 import red.biopersona.faceservice.model.ConfidenceDTO;
 import red.biopersona.faceservice.model.LocationDTO;
 import red.biopersona.faceservice.model.RequestEnrollFaceDTO;
+import red.biopersona.faceservice.model.RequestFeaturesFaceDTO;
 import red.biopersona.faceservice.model.RequestValidaFaceDTO;
 import red.biopersona.faceservice.model.ResponseCaracteristicasDTO;
 import red.biopersona.faceservice.model.ResponseEnrollFace;
 import red.biopersona.faceservice.model.ResponseFaceQualityDTO;
+import red.biopersona.faceservice.model.ResponseFeaturesFaceDTO;
 import red.biopersona.faceservice.model.ResponsePuedeCrearTemplateDTO;
 import red.biopersona.faceservice.model.ResponseValidaFaceDTO;
 import red.biopersona.faceservice.util.ErrorEnum;
@@ -380,6 +382,35 @@ public class ClientesService implements IClientesService {
 		return resp;
 	}
 
+	public ResponseFeaturesFaceDTO getCaracteristicas(RequestFeaturesFaceDTO request) throws CollectionsServiceException {
+		if(request==null) {
+			log.error("request file null");
+		}else {
+			log.error("getCaracteristicas file not null");
+		}
+		ResponseFeaturesFaceDTO respuesta = new ResponseFeaturesFaceDTO();
+		if(request.getFile()==null) {
+			log.error("Error file null");
+		}else {
+			log.error("getCaracteristicas ResponseFeaturesFaceDTO not null");
+		}
+		ResponsePuedeCrearTemplateDTO estatusTemplate = puedeCrearTemplate(request.getFile());
+		ResponseCaracteristicasDTO caracteristicas = getFaceFeatures(estatusTemplate.getSubject(), false);
+		
+		ResponseFaceQualityDTO calidad = geQuality(estatusTemplate.getSubject(), caracteristicas.getPersonsFound(),
+				estatusTemplate.getImage(), false, false);
+		respuesta.setMessage(estatusTemplate.getStatus().name());
+		respuesta.setStatusTemplate(estatusTemplate.getStatus().name());
+		respuesta.setPersonsFound(caracteristicas.getPersonsFound());
+		respuesta.setFacialFeatures(caracteristicas.getFacialFeatures());
+		respuesta.setQuality(calidad.getQuality());
+		respuesta.setSharpness(calidad.getSharpness());
+		respuesta.setBackgroundUniformity(calidad.getBackgroundUniformity());
+		respuesta.setGrayScale(calidad.getGrayScale());
+		return respuesta;
+	}
+	
+	
 	public ResponseValidaFaceDTO validaFace(RequestValidaFaceDTO request) throws CollectionsServiceException {
 		ResponseValidaFaceDTO respuesta = new ResponseValidaFaceDTO();
 		ResponsePuedeCrearTemplateDTO estatusTemplate = puedeCrearTemplate(request.getFile());
@@ -461,18 +492,26 @@ public class ClientesService implements IClientesService {
 
 	@SuppressWarnings({ "deprecation", "resource" })
 	public ResponsePuedeCrearTemplateDTO puedeCrearTemplate(MultipartFile file) throws CollectionsServiceException {
+		if(file==null) {
+			log.error("file null, puedeCrearTemplate");
+		}else {
+			log.error("file ok, puedeCrearTemplate");
+		}
 		NSubject subject = null;
 		ResponsePuedeCrearTemplateDTO resp = new ResponsePuedeCrearTemplateDTO();
 		try {
 			subject = new NSubject();
 			byte[] byteArr = file.getBytes();
+			log.info("length "+byteArr.length);
 			ByteBuffer buffer = ByteBuffer.wrap(byteArr);
+			log.info("a1");
 			NImage img = NImage.fromMemory(buffer);
 			NFace face = new NFace();
 			face.setImage(img);
+			log.info("a2");
 			subject.getFaces().add(face);
 			subject.setMultipleSubjects(true);
-
+			log.info("a3");
 			biometricClient.setMatchingThreshold(48);
 			biometricClient.setFacesQualityThreshold(Byte.parseByte("20"));
 			biometricClient.setFacesMaximalRoll(15);
@@ -488,12 +527,20 @@ public class ClientesService implements IClientesService {
 			biometricClient.setFacesDetermineAge(true);
 			biometricClient.setFacesDetermineGender(true);
 			biometricClient.setFacesTemplateSize(NTemplateSize.LARGE);
+			log.info("a4");
+			if(biometricClient==null) {
+				log.info("biometricClient nulo");	
+			}
 			NBiometricStatus status = biometricClient.createTemplate(subject);
+			
+			log.info("a5");
+			
 			log.info("status crateTemplate " + status.name());
 			resp.setSubject(subject);
 			resp.setImage(img);
 			resp.setStatus(status);
 		} catch (IOException e) {
+			log.error(e.getMessage().toString());
 			e.printStackTrace();
 			throw new CollectionsServiceException(ErrorEnum.EXC_ERROR_PARAMS);
 		} finally {

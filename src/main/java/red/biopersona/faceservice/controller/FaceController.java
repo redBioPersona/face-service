@@ -16,17 +16,20 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import red.biopersona.faceservice.controller.exception.CollectionsServiceException;
 import red.biopersona.faceservice.model.RequestEnrollFaceDTO;
+import red.biopersona.faceservice.model.RequestFeaturesFaceDTO;
 import red.biopersona.faceservice.model.RequestValidaFaceDTO;
 import red.biopersona.faceservice.model.ResponseEnrollFace;
+import red.biopersona.faceservice.model.ResponseFeaturesFaceDTO;
 import red.biopersona.faceservice.model.ResponseValidaFaceDTO;
 import red.biopersona.faceservice.service.ClientesService;
+import red.biopersona.faceservice.service.IClientesService;
 
 @RestController
 @RequestMapping("/face")
 @Slf4j
 public class FaceController {
 	@Autowired
-	ClientesService clientesService;
+	IClientesService clientesService;
 		
 	@ApiOperation(value = "Carga de archivo", notes = "En el header Location devuelve el recurso que fue registrado", response=ResponseEntity.class, httpMethod="POST")				    
 	@PostMapping(value = "/enroll", produces = MediaType.APPLICATION_JSON_VALUE )
@@ -39,6 +42,19 @@ public class FaceController {
 			code=HttpStatus.OK;
 		}
 		return new ResponseEntity<>(resul, code);
+	}
+	
+	@ApiOperation(value = "Calidad de la muestra", notes = "En el header Location devuelve el recurso que fue registrado", response=ResponseEntity.class, httpMethod="POST")				    
+	@PostMapping(value = "/features", produces = MediaType.APPLICATION_JSON_VALUE )
+	public ResponseEntity<?> identify(@RequestHeader("client") String client,@Valid @ModelAttribute RequestFeaturesFaceDTO request) throws CollectionsServiceException  {
+		log.info("Face enrolling..");
+		request.setClient(client);
+		HttpStatus code = HttpStatus.BAD_REQUEST;
+		ResponseFeaturesFaceDTO resp=clientesService.getCaracteristicas(request);		
+		if(resp.getMessage().equals("OK")) {
+			code=HttpStatus.OK;
+		}
+		return new ResponseEntity<>(resp, code);
 	}
 	
 	@ApiOperation(value = "Carga de archivo", notes = "En el header Location devuelve el recurso que fue registrado", response=ResponseEntity.class, httpMethod="POST")				    

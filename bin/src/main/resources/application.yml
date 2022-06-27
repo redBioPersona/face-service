@@ -12,6 +12,6 @@ face:
   trialMode: true
   serverAddress: /local
   serverPort: 5000
-  routeSqlite: C:\Users\Z259151\Repositorios\MIS_PROYECTOS\redbiopersona\face.db
+  routeSqlite: D:\webFinger\MotorValidacion\microservicios\face.db
 persistence-service:
   enroll: http://localhost:8085/persistence/enroll
