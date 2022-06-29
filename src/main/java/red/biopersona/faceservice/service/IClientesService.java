@@ -29,4 +29,5 @@ public interface IClientesService {
 	ResponseFeaturesFaceDTO getCaracteristicas(RequestFeaturesFaceDTO request) throws CollectionsServiceException;
 	
 	ResponseValidaFaceDTO validaFace(RequestValidaFaceDTO request) throws CollectionsServiceException;
+	boolean deleteSample(String client,String sample) throws CollectionsServiceException;
 }

@@ -54,7 +54,7 @@ import red.biopersona.faceservice.util.ErrorEnum;
 public class ClientesService implements IClientesService {
 
 	@Autowired
-	PersistenceService persistence;
+	IPersistenceService persistence;
 
 	private final String notDetected = "Not detected";
 	private final String valueFalse = "false";
@@ -71,6 +71,7 @@ public class ClientesService implements IClientesService {
 		LibraryManager.initLibraryPath();
 		try {
 			log.info("Trial mode: " + trialMode);
+			log.info("Path db Sqlite: " + routeSqlite);
 			NLicenseManager.setTrialMode(trialMode);
 			log.info(serverAddress + ":" + serverPort + " " + licenses);
 			if (!NLicense.obtain(serverAddress, serverPort, licenses)) {
@@ -383,19 +384,9 @@ public class ClientesService implements IClientesService {
 	}
 
 	public ResponseFeaturesFaceDTO getCaracteristicas(RequestFeaturesFaceDTO request) throws CollectionsServiceException {
-		if(request==null) {
-			log.error("request file null");
-		}else {
-			log.error("getCaracteristicas file not null");
-		}
 		ResponseFeaturesFaceDTO respuesta = new ResponseFeaturesFaceDTO();
-		if(request.getFile()==null) {
-			log.error("Error file null");
-		}else {
-			log.error("getCaracteristicas ResponseFeaturesFaceDTO not null");
-		}
 		ResponsePuedeCrearTemplateDTO estatusTemplate = puedeCrearTemplate(request.getFile());
-		ResponseCaracteristicasDTO caracteristicas = getFaceFeatures(estatusTemplate.getSubject(), false);
+		ResponseCaracteristicasDTO caracteristicas = getFaceFeatures(estatusTemplate.getSubject(), true);
 		
 		ResponseFaceQualityDTO calidad = geQuality(estatusTemplate.getSubject(), caracteristicas.getPersonsFound(),
 				estatusTemplate.getImage(), false, false);
@@ -434,6 +425,14 @@ public class ClientesService implements IClientesService {
 		respuesta.setGrayScale(calidad.getGrayScale());
 		return respuesta;
 	}
+	
+	public boolean deleteSample(String client,String sample) throws CollectionsServiceException {
+			persistence.deleteSample(client, sample);
+			biometricClient.delete(sample);
+			
+			return true;
+	}
+	
 
 	public ResponseEnrollFace enrollFace(RequestEnrollFaceDTO request) throws CollectionsServiceException {
 		ResponseEnrollFace respuesta = new ResponseEnrollFace();
@@ -504,14 +503,12 @@ public class ClientesService implements IClientesService {
 			byte[] byteArr = file.getBytes();
 			log.info("length "+byteArr.length);
 			ByteBuffer buffer = ByteBuffer.wrap(byteArr);
-			log.info("a1");
 			NImage img = NImage.fromMemory(buffer);
 			NFace face = new NFace();
 			face.setImage(img);
-			log.info("a2");
 			subject.getFaces().add(face);
 			subject.setMultipleSubjects(true);
-			log.info("a3");
+			
 			biometricClient.setMatchingThreshold(48);
 			biometricClient.setFacesQualityThreshold(Byte.parseByte("20"));
 			biometricClient.setFacesMaximalRoll(15);
@@ -527,14 +524,11 @@ public class ClientesService implements IClientesService {
 			biometricClient.setFacesDetermineAge(true);
 			biometricClient.setFacesDetermineGender(true);
 			biometricClient.setFacesTemplateSize(NTemplateSize.LARGE);
-			log.info("a4");
+
 			if(biometricClient==null) {
 				log.info("biometricClient nulo");	
 			}
 			NBiometricStatus status = biometricClient.createTemplate(subject);
-			
-			log.info("a5");
-			
 			log.info("status crateTemplate " + status.name());
 			resp.setSubject(subject);
 			resp.setImage(img);

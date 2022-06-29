@@ -19,8 +19,6 @@ public class ResponseFeaturesFaceDTO implements Serializable {
     private int backgroundUniformity;
     private int grayScale;
     private String message;
-    private String personMatch;
-    private int personMatchScore;
     private List<CaracteristicasFacialesDTO> facialFeatures;
 
 }
